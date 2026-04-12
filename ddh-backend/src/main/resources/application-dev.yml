@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/ddh_assistant?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
+
+# LLM openrouter配置
+#llm:
+#  api-key: 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
+#  base-url: https://openrouter.ai/api/v1
+#  model: z-ai/glm-4.5-air:free
+#  max-tokens: 4096
+#  temperature: 0.7
+#  timeout: 120
+
+
+llm:
+  api-key: sk-1ee9fb8442064cfa95e968e7e3ef8d86
+  base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  model: deepseek-v3.2
+  max-tokens: 4096
+  temperature: 0.7
+  timeout: 120
+
+
+logging:
+  level:
+    com.ddh.assistant: debug
+    com.ddh.assistant.service.ai: debug
