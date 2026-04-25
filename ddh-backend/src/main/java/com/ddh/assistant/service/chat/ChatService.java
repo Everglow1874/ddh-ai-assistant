@@ -112,6 +112,18 @@ public class ChatService {
                 context.put("userRequirement", userMessage);
                 String reqContextJson = extractJsonContext(responseContent);
                 context.put("requirementAnalysis", reqContextJson != null ? reqContextJson : responseContent);
+                // 提取需求摘要并自动重命名会话
+                if (reqContextJson != null) {
+                    try {
+                        com.fasterxml.jackson.databind.JsonNode reqNode = objectMapper.readTree(reqContextJson);
+                        if (reqNode.has("summary")) {
+                            String summary = reqNode.get("summary").asText();
+                            if (summary != null && !summary.isEmpty()) {
+                                session.setSessionName(summary.length() > 50 ? summary.substring(0, 50) + "…" : summary);
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
                 log.info("[Chat] INIT 完成, jsonContext提取={}, 响应长度={}", reqContextJson != null, responseContent.length());
                 nextState = "TABLE_RECOMMENDATION";
                 break;

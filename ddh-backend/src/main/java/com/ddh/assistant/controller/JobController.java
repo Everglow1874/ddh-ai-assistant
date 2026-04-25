@@ -5,6 +5,7 @@ import com.ddh.assistant.model.entity.EtlJob;
 import com.ddh.assistant.model.entity.EtlJobStep;
 import com.ddh.assistant.service.job.JobExportService;
 import com.ddh.assistant.service.job.JobService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -22,10 +24,16 @@ public class JobController {
     private final JobService jobService;
     private final JobExportService jobExportService;
 
+    /** 作业列表（含步骤数） */
     @GetMapping("/projects/{projectId}/jobs")
-    public Result<List<EtlJob>> listJobs(@PathVariable Long projectId,
-                                         @RequestParam(required = false) String keyword) {
-        return Result.ok(jobService.list(projectId, keyword));
+    public Result<List<JobVO>> listJobs(@PathVariable Long projectId,
+                                        @RequestParam(required = false) String keyword) {
+        List<EtlJob> jobs = jobService.list(projectId, keyword);
+        List<JobVO> vos = jobs.stream().map(job -> {
+            List<EtlJobStep> steps = jobService.getStepsByJob(job.getId());
+            return new JobVO(job, steps.size());
+        }).collect(Collectors.toList());
+        return Result.ok(vos);
     }
 
     @GetMapping("/jobs/{id}")
@@ -76,11 +84,8 @@ public class JobController {
     public ResponseEntity<InputStreamResource> exportJob(@PathVariable Long id) {
         EtlJob job = jobService.getById(id);
         List<EtlJobStep> steps = jobService.getStepsByJob(id);
-
         InputStreamResource resource = jobExportService.exportToZip(job, steps);
-
         String filename = job.getJobName().replaceAll("[^a-zA-Z0-9]", "_") + ".zip";
-
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -91,5 +96,33 @@ public class JobController {
     public Result<EtlJob> updateStatus(@PathVariable Long id, @RequestParam String status) {
         jobService.updateStatus(id, status);
         return Result.ok(jobService.getById(id));
+    }
+
+    /** 作业视图对象，附带步骤数 */
+    @Data
+    public static class JobVO {
+        private Long id;
+        private Long projectId;
+        private Long sessionId;
+        private String jobName;
+        private String description;
+        private String status;
+        private Integer version;
+        private Integer stepCount;
+        private String createdAt;
+        private String updatedAt;
+
+        public JobVO(EtlJob job, int stepCount) {
+            this.id = job.getId();
+            this.projectId = job.getProjectId();
+            this.sessionId = job.getSessionId();
+            this.jobName = job.getJobName();
+            this.description = job.getDescription();
+            this.status = job.getStatus();
+            this.version = job.getVersion();
+            this.stepCount = stepCount;
+            this.createdAt = job.getCreatedAt() != null ? job.getCreatedAt().toString() : null;
+            this.updatedAt = job.getUpdatedAt() != null ? job.getUpdatedAt().toString() : null;
+        }
     }
 }

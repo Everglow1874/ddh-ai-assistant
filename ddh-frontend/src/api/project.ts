@@ -27,3 +27,8 @@ export function deleteProject(id: number): Promise<void> {
 export function healthCheck(): Promise<any> {
   return request.get('/projects/health');
 }
+
+/** 获取项目详情 */
+export function getProject(id: number): Promise<Project> {
+  return request.get(`/projects/${id}`);
+}

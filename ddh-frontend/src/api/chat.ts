@@ -141,3 +141,8 @@ export function sendMessageStream(
 
   return controller;
 }
+
+/** 获取单个会话 */
+export function getSession(sessionId: number): Promise<ChatSession> {
+  return request.get(`/chat/sessions/${sessionId}`);
+}

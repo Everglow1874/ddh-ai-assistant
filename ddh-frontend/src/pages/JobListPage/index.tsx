@@ -94,6 +94,13 @@ function JobListPage() {
       },
     },
     {
+      title: '步骤数',
+      dataIndex: 'stepCount',
+      key: 'stepCount',
+      width: 80,
+      render: (count: number) => count != null ? `${count} 步` : '-',
+    },
+    {
       title: '版本',
       dataIndex: 'version',
       key: 'version',

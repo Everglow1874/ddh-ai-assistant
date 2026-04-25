@@ -5,6 +5,7 @@ import com.ddh.assistant.model.entity.TableMetadata;
 import com.ddh.assistant.model.entity.ColumnMetadata;
 import com.ddh.assistant.service.metadata.MetadataService;
 import com.ddh.assistant.service.metadata.MetadataService.ImportResult;
+import com.ddh.assistant.service.metadata.DdlParserService;
 import com.ddh.assistant.service.metadata.ExcelParserService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class MetadataController {
 
     private final MetadataService metadataService;
     private final ExcelParserService excelParserService;
+    private final DdlParserService ddlParserService;
 
     /**
      * 获取表列表（分页）
@@ -103,6 +105,38 @@ public class MetadataController {
         } catch (Exception e) {
             log.error("Excel 导入失败", e);
             return Result.fail(500, "Excel 解析失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 导入 DDL 语句（CREATE TABLE）
+     */
+    @PostMapping("/import/ddl")
+    public Result<ImportResult> importDdl(
+            @PathVariable Long projectId,
+            @RequestBody java.util.Map<String, String> body) {
+
+        String ddlText = body.get("ddl");
+        if (!org.springframework.util.StringUtils.hasText(ddlText)) {
+            return Result.fail(400, "DDL 内容不能为空");
+        }
+
+        try {
+            DdlParserService.DdlParseResult parseResult = ddlParserService.parseDdl(ddlText);
+            if (parseResult.getTables().isEmpty()) {
+                return Result.fail(400, "未解析到有效的 CREATE TABLE 语句：" +
+                        (parseResult.getErrors().isEmpty() ? "请检查 DDL 格式" : parseResult.getErrors().get(0)));
+            }
+
+            ImportResult importResult = metadataService.importMetadata(
+                    projectId, parseResult.getTables(), parseResult.getColumns());
+            if (!parseResult.getErrors().isEmpty()) {
+                importResult.setErrors(parseResult.getErrors());
+            }
+            return Result.ok(importResult);
+        } catch (Exception e) {
+            log.error("DDL 导入失败", e);
+            return Result.fail(500, "DDL 解析失败: " + e.getMessage());
         }
     }
 

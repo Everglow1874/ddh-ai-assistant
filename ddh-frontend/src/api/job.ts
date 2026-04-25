@@ -8,6 +8,7 @@ export interface EtlJob {
   description?: string;
   status: string;
   version: number;
+  stepCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }

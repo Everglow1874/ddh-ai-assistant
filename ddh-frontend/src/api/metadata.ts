@@ -74,3 +74,7 @@ export function updateTable(projectId: number, tableId: number, data: Partial<Ta
 export function updateColumn(projectId: number, columnId: number, data: Partial<ColumnMetadata>): Promise<void> {
   return request.put(`/projects/${projectId}/metadata/columns/${columnId}`, data);
 }
+/** 导入 DDL 语句 */
+export function importDdl(projectId: number, ddl: string): Promise<ImportResult> {
+  return request.post(`/projects/${projectId}/metadata/import/ddl`, { ddl });
+}

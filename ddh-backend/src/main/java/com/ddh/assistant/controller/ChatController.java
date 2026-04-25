@@ -54,6 +54,15 @@ public class ChatController {
     }
 
     /**
+     * 获取单个会话
+     */
+    @GetMapping("/chat/sessions/{sessionId}")
+    public Result<ChatSession> getSession(@PathVariable Long sessionId) {
+        ChatSession session = chatService.getSession(sessionId);
+        return Result.ok(session);
+    }
+
+    /**
      * 获取对话消息
      */
     @GetMapping("/chat/sessions/{sessionId}/messages")
