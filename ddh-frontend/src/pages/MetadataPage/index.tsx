@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { Table, Button, Space, Input, message, Upload, Modal, Popconfirm, Tabs, Tag, Tooltip, Typography } from 'antd'
 import { UploadOutlined, CodeOutlined, KeyOutlined, CopyOutlined, DatabaseOutlined } from '@ant-design/icons'
@@ -46,7 +46,7 @@ function MetadataPage() {
   const [importTab, setImportTab] = useState<'excel' | 'ddl'>('excel')
   const [ddlText, setDdlText] = useState('')
 
-  const fetchTables = async (page = 1, kw = keyword) => {
+  const fetchTables = useCallback(async (page = 1, kw = keyword) => {
     setLoading(true)
     try {
       const result = await getTables(pid, kw || undefined, page, 20)
@@ -56,9 +56,9 @@ function MetadataPage() {
     } catch { /* handled */ } finally {
       setLoading(false)
     }
-  }
+  }, [pid, keyword])
 
-  useEffect(() => { fetchTables() }, [pid])
+  useEffect(() => { fetchTables() }, [pid, fetchTables])
 
   const handleTableClick = async (table: TableMetadata) => {
     try {
@@ -116,6 +116,7 @@ function MetadataPage() {
       setImportLoading(false)
     }
   }
+  const handleCopyDdl = () => {
     if (!selectedTable) return
     const ddl = generateDdl(selectedTable, columns)
     navigator.clipboard.writeText(ddl).then(() => message.success('DDL 已复制到剪贴板'))

@@ -1,11 +1,19 @@
 import request from './request';
 
+export interface PageResult<T> {
+  records: T[];
+  total: number;
+  size: number;
+  current: number;
+  pages: number;
+}
+
 export interface Project {
   id: number;
   projectName: string;
-  description?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** 获取项目列表 */
@@ -24,7 +32,7 @@ export function deleteProject(id: number): Promise<void> {
 }
 
 /** 健康检查 */
-export function healthCheck(): Promise<any> {
+export function healthCheck(): Promise<string> {
   return request.get('/projects/health');
 }
 

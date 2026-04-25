@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Typography, Button, Space, Input, message, Card, Modal, Form, Tag, Tooltip, Badge, Drawer } from 'antd'
+import { Typography, Button, Space, Input, message, Modal, Form, Tag, Tooltip, Badge, Drawer } from 'antd'
 import {
   SendOutlined, PlusOutlined, SaveOutlined, UnorderedListOutlined,
   LoadingOutlined, TableOutlined, KeyOutlined, CheckCircleFilled,
   HistoryOutlined, CopyOutlined
 } from '@ant-design/icons'
 import { getAllTables, getTableDetail, type TableMetadata, type ColumnMetadata } from '../../api/metadata'
-import { createSession, getSession, getSessions, getMessages, getGeneratedSql, sendMessageStream, type ChatSession, type ChatMessage } from '../../api/chat'
+import { createSession, getSessions, getMessages, getGeneratedSql, sendMessageStream, type ChatSession, type ChatMessage } from '../../api/chat'
 import { createJobFromSession } from '../../api/job'
 import { SqlPreview } from '../../components/SqlEditor'
 import { MarkdownBubble } from '../../components/MarkdownBubble'
@@ -195,17 +195,25 @@ function WorkbenchPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  useEffect(() => {
-    getAllTables(pid).then(setTables).catch(console.error)
-    fetchSessionList()
-  }, [pid])
-
-  const fetchSessionList = async () => {
+  const fetchSessionList = useCallback(async () => {
     try {
       const page = await getSessions(pid, 1, 50)
       setSessionList(page?.records || [])
     } catch { /* ignore */ }
-  }
+  }, [pid])
+
+  useEffect(() => {
+    let mounted = true
+    getAllTables(pid).then(data => {
+      if(mounted) setTables(data)
+    }).catch(console.error)
+
+    getSessions(pid, 1, 50).then(page => {
+      if(mounted) setSessionList(page?.records || [])
+    }).catch(() => {})
+
+    return () => { mounted = false }
+  }, [pid])
 
   const handleSwitchSession = async (s: ChatSession) => {
     abortRef.current?.abort()
@@ -261,40 +269,38 @@ function WorkbenchPage() {
     setInput('')
     setLoading(true)
 
-    const tempUserMsg: ChatMessage = {
-      id: Date.now(), sessionId: session.id, role: 'user',
-      content: userText, messageType: 'TEXT', createdAt: new Date().toISOString(),
-    }
-    setMessages(prev => [...prev, tempUserMsg])
-    setStreamingMsg({ role: 'assistant', content: '', streaming: true })
+    // 追加用户消息
+    const userMsg: ChatMessage = { id: Date.now(), sessionId: session.id, role: 'user', content: userText }
+    setMessages(prev => [...prev, userMsg])
 
+    // 占位 assistant 消息
+    const astMsgId = Date.now() + 1
+    const astMsg: ChatMessage = { id: astMsgId, sessionId: session.id, role: 'assistant', content: '' }
+    setMessages(prev => [...prev, astMsg])
+
+    // 滚动到底部
+    setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, 100)
+
+    // 发起 SSE 流式请求
     abortRef.current = sendMessageStream(
-      session.id, userText,
-      (chunk) => {
-        setStreamingMsg(prev => prev ? { ...prev, content: prev.content + chunk } : null)
+      pid,
+      session.id,
+      userText,
+      (text) => {
+        setMessages(prev => prev.map(m => m.id === astMsgId ? { ...m, content: text } : m))
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       },
-      async () => {
-        setStreamingMsg(null)
+      () => {
         setLoading(false)
-        try {
-          const msgs = await getMessages(session.id)
-          setMessages(msgs)
-        } catch { /* ignore */ }
-        await refreshSql()
-        // 刷新 session 以更新阶段状态
-        try {
-          const updatedSession = await getSession(session.id)
-          setSession(updatedSession)
-          fetchSessionList()
-        } catch { /* ignore */ }
+        fetchSessionList() // 重新获取状态
+        refreshSql(session.id)
       },
       (err) => {
-        setStreamingMsg(null)
         setLoading(false)
-        message.error(`发送失败: ${err}`)
-      },
+        message.error(`请求失败: ${err}`)
+      }
     )
-  }, [input, session, loading, refreshSql, pid])
+  }, [input, session, loading, refreshSql, pid, fetchSessionList])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }

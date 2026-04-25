@@ -79,6 +79,8 @@ public class JobService {
      */
     @Transactional
     public EtlJob createFromSession(Long projectId, Long sessionId, String jobName, String description) {
+        ChatSession session = sessionMapper.selectById(sessionId);
+        
         EtlJob job = new EtlJob();
         job.setProjectId(projectId);
         job.setSessionId(sessionId);
@@ -95,7 +97,6 @@ public class JobService {
         log.info("[JobService] 作业创建成功, jobId={}, sessionId={}", job.getId(), sessionId);
 
         try {
-            ChatSession session = sessionMapper.selectById(sessionId);
             if (session != null && StringUtils.hasText(session.getContextJson())) {
                 JsonNode context = objectMapper.readTree(session.getContextJson());
                 parseAndCreateSteps(job.getId(), context);
@@ -240,7 +241,8 @@ public class JobService {
             step.setStepOrder(order++);
             step.setStepName(stepName);
             step.setStepType(stepType);
-            step.setDescription(section.lines().filter(l -> l.trim().startsWith("--"))
+            step.setDescription(java.util.Arrays.stream(section.split("\\r?\\n"))
+                    .filter(l -> l.trim().startsWith("--"))
                     .findFirst().map(l -> l.trim().replaceFirst("^--\\s*", "")).orElse(""));
             step.setDdlSql(StringUtils.hasText(ddl) ? ddl : null);
             step.setDmlSql(StringUtils.hasText(dml) ? dml : section.trim());

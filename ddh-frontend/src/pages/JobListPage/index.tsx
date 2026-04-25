@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Table, Button, Space, Input, Modal, message, Tag, Card, Typography, Empty } from 'antd'
 import { DeleteOutlined, ExportOutlined, PlusOutlined } from '@ant-design/icons'
@@ -15,23 +15,23 @@ function JobListPage() {
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
 
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     if (!pid) return
     setLoading(true)
     try {
       const data = await getJobs(pid, keyword || undefined)
       setJobs(data)
-    } catch (e) {
+    } catch {
       // 错误已由请求拦截器处理
     } finally {
       setLoading(false)
     }
-  }
+  }, [pid, keyword])
 
   useEffect(() => {
     if (!pid) return
     loadJobs()
-  }, [pid, keyword])
+  }, [pid, keyword, loadJobs])
 
   const handleDelete = (id: number) => {
     Modal.confirm({
@@ -44,7 +44,7 @@ function JobListPage() {
           await deleteJob(id)
           message.success('删除成功')
           loadJobs()
-        } catch (e) {
+        } catch {
           // 错误已由请求拦截器处理
         }
       },
@@ -64,7 +64,7 @@ function JobListPage() {
       a.click()
       window.URL.revokeObjectURL(url)
       message.success('导出成功')
-    } catch (e) {
+    } catch {
       message.error('导出失败')
     }
   }
@@ -114,7 +114,7 @@ function JobListPage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: EtlJob) => (
+      render: (_: unknown, record: EtlJob) => (
         <Space>
           <Button
             type="text"

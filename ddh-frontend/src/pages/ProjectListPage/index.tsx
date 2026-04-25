@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Modal, Form, Input, message, Empty, Space, Popconfirm, Typography, Tag } from 'antd'
+import { Button, Modal, Form, Input, message, Empty, Space, Popconfirm, Typography } from 'antd'
 import {
   PlusOutlined, DeleteOutlined, ArrowRightOutlined,
-  DatabaseOutlined, UnorderedListOutlined, ClockCircleOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons'
 import { getProjects, createProject, deleteProject, type Project } from '../../api/project'
 

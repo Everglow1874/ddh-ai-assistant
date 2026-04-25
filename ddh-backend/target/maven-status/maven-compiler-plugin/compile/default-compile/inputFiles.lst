@@ -23,6 +23,7 @@ D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant
 D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant\controller\ChatController.java
 D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant\mapper\ChatMessageMapper.java
 D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant\ExcelTemplateGenerator.java
+D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant\service\metadata\DdlParserService.java
 D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant\service\metadata\ExcelParserService.java
 D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant\common\Result.java
 D:\learning\project\ai\ddh-assistant\ddh-backend\src\main\java\com\ddh\assistant\DdhAssistantApplication.java

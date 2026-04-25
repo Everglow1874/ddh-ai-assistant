@@ -23,8 +23,16 @@ export function createSession(projectId: number, sessionName?: string): Promise<
   return request.post(`/projects/${projectId}/chat/sessions`, { sessionName });
 }
 
+export interface PageResult<T> {
+  records: T[];
+  total: number;
+  size: number;
+  current: number;
+  pages: number;
+}
+
 /** 获取对话列表 */
-export function getSessions(projectId: number, current = 1, size = 20): Promise<any> {
+export function getSessions(projectId: number, current = 1, size = 20): Promise<PageResult<ChatSession>> {
   return request.get(`/projects/${projectId}/chat/sessions`, { params: { current, size } });
 }
 

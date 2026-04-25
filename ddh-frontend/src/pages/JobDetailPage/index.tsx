@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Card, Button, Space, Typography, Tag, message, Tabs } from 'antd'
 import { ExportOutlined, ArrowLeftOutlined, EditOutlined, SaveOutlined, CheckOutlined } from '@ant-design/icons'
@@ -29,21 +29,7 @@ function JobDetailPage() {
   const [draftDml, setDraftDml] = useState('')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (!jid) return
-    loadData()
-  }, [jid])
-
-  useEffect(() => {
-    if (selectedStep) {
-      setDraftDdl(selectedStep.ddlSql || '')
-      setDraftDml(selectedStep.dmlSql || '')
-      setEditingDdl(false)
-      setEditingDml(false)
-    }
-  }, [selectedStep?.id])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!jid) return
     try {
       const [jobData, stepsData] = await Promise.all([getJob(jid), getJobSteps(jid)])
@@ -55,7 +41,21 @@ function JobDetailPage() {
     } catch {
       message.error('加载作业详情失败')
     }
-  }
+  }, [jid, selectedStep])
+
+  useEffect(() => {
+    if (!jid) return
+    loadData()
+  }, [jid, loadData])
+
+  useEffect(() => {
+    if (selectedStep) {
+      setDraftDdl(selectedStep.ddlSql || '')
+      setDraftDml(selectedStep.dmlSql || '')
+      setEditingDdl(false)
+      setEditingDml(false)
+    }
+  }, [selectedStep])
 
   const handleExport = async () => {
     if (!jid) return
