@@ -157,6 +157,8 @@ public class LlmService {
                 throw new IOException("响应体为空");
             }
 
+            boolean inReasoning = false;
+
             // 逐行读取流式响应
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(response.body().byteStream(), "UTF-8"))) {
@@ -188,21 +190,47 @@ public class LlmService {
                         if (choices.isEmpty()) continue;
 
                         JsonNode delta = choices.get(0).path("delta");
+                        String reasoningToken = delta.path("reasoning_content").asText(null);
                         String token = delta.path("content").asText(null);
 
+                        // 处理思考内容
+                        if (reasoningToken != null && !reasoningToken.isEmpty()) {
+                            if (!inReasoning) {
+                                inReasoning = true;
+                                fullContent.append("<think>\n");
+                            }
+                            fullContent.append(reasoningToken);
+                            if (onToken != null) {
+                                onToken.accept("r:" + reasoningToken);
+                            }
+                        }
+
+                        // 处理正式输出内容
                         if (token != null && !token.isEmpty()) {
+                            if (inReasoning) {
+                                inReasoning = false;
+                                fullContent.append("\n</think>\n");
+                                if (onToken != null) {
+                                    onToken.accept("r:</think>");
+                                }
+                            }
                             tokenCount++;
                             fullContent.append(token);
                             if (tokenCount <= 3) {
                                 log.info("[Stream] token[{}]: '{}'", tokenCount, token);
                             }
                             if (onToken != null) {
-                                onToken.accept(token);
+                                onToken.accept("c:" + token);
                             }
                         }
                     } catch (Exception e) {
                         log.warn("[Stream] 解析 SSE 行失败: '{}', error: {}", line, e.getMessage());
                     }
+                }
+
+                // 如果流结束时仍在 thinking 阶段，自动闭合标签
+                if (inReasoning) {
+                    fullContent.append("\n</think>\n");
                 }
             }
         }

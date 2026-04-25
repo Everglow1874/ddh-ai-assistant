@@ -4,6 +4,7 @@ import type { Components } from 'react-markdown'
 
 interface MarkdownBubbleProps {
   content: string
+  thinking?: string
   streaming?: boolean
 }
 
@@ -18,7 +19,7 @@ function stripJsonContext(text: string): string {
  * Markdown 消息气泡组件 - 用于渲染 AI 回复
  * 支持 GFM 表格、代码高亮、列表等
  */
-export function MarkdownBubble({ content, streaming = false }: MarkdownBubbleProps) {
+export function MarkdownBubble({ content, thinking, streaming = false }: MarkdownBubbleProps) {
   const displayContent = stripJsonContext(content)
 
   const components: Components = {
@@ -137,9 +138,27 @@ export function MarkdownBubble({ content, streaming = false }: MarkdownBubblePro
 
   return (
     <div style={{ fontSize: 14, lineHeight: 1.6, wordBreak: 'break-word' }}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {displayContent}
-      </ReactMarkdown>
+      {thinking && (
+        <div style={{
+          background: '#f5f5f5',
+          borderRadius: 6,
+          padding: '10px 12px',
+          marginBottom: 12,
+          borderLeft: '3px solid #d9d9d9',
+        }}>
+          <div style={{ fontSize: 12, color: '#bbb', fontWeight: 600, marginBottom: 6 }}>思考过程</div>
+          <div style={{ color: '#999', fontSize: 13, lineHeight: 1.6 }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+              {thinking}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
+      <div style={{ color: '#1a1a1a' }}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+          {displayContent}
+        </ReactMarkdown>
+      </div>
       {streaming && (
         <span style={{
           display: 'inline-block',

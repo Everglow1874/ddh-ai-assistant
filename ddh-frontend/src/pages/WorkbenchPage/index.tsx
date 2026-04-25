@@ -191,6 +191,7 @@ function WorkbenchPage() {
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false)
   const [sessionList, setSessionList] = useState<ChatSession[]>([])
+  const [thinkingMap, setThinkingMap] = useState<Record<number, string>>({})
   const [saveForm] = Form.useForm()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -219,6 +220,7 @@ function WorkbenchPage() {
     abortRef.current?.abort()
     setStreamingMsg(null)
     setGeneratedSql('')
+    setThinkingMap({})
     setSession(s)
     setHistoryDrawerOpen(false)
     try {
@@ -251,6 +253,7 @@ function WorkbenchPage() {
     abortRef.current?.abort()
     setStreamingMsg(null)
     setGeneratedSql('')
+    setThinkingMap({})
     try {
       const newSession = await createSession(pid, '新会话')
       setSession(newSession)
@@ -283,17 +286,19 @@ function WorkbenchPage() {
 
     // 发起 SSE 流式请求
     abortRef.current = sendMessageStream(
-      pid,
       session.id,
       userText,
       (text) => {
-        setMessages(prev => prev.map(m => m.id === astMsgId ? { ...m, content: text } : m))
+        setMessages(prev => prev.map(m => m.id === astMsgId ? { ...m, content: m.content + text } : m))
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      },
+      (text) => {
+        setThinkingMap(prev => ({ ...prev, [astMsgId]: (prev[astMsgId] || '') + text }))
       },
       () => {
         setLoading(false)
         fetchSessionList() // 重新获取状态
-        refreshSql(session.id)
+        refreshSql()
       },
       (err) => {
         setLoading(false)
@@ -319,7 +324,7 @@ function WorkbenchPage() {
     }
   }
 
-  const renderBubble = (role: string, content: string, key: string | number, streaming = false) => (
+  const renderBubble = (role: string, content: string, key: string | number, streaming = false, thinking?: string) => (
     <div key={key} style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: role === 'user' ? 'flex-end' : 'flex-start' }}>
         <div style={{
@@ -332,7 +337,7 @@ function WorkbenchPage() {
           {role === 'user' ? (
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit', fontSize: 14 }}>{content}</pre>
           ) : (
-            <MarkdownBubble content={content} streaming={streaming} />
+            <MarkdownBubble content={content} thinking={thinking} streaming={streaming} />
           )}
         </div>
       </div>
@@ -387,8 +392,8 @@ function WorkbenchPage() {
             </div>
           ) : (
             <div>
-              {messages.map(msg => renderBubble(msg.role, msg.content, msg.id))}
-              {streamingMsg && renderBubble('assistant', streamingMsg.content || '▋', 'streaming', true)}
+              {messages.map(msg => renderBubble(msg.role, msg.content, msg.id, false, thinkingMap[msg.id]))}
+              {streamingMsg && renderBubble('assistant', streamingMsg.content || '▋', 'streaming', true, thinkingMap['streaming'])}
               <div ref={messagesEndRef} />
             </div>
           )}

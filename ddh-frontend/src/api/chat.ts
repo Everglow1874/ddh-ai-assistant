@@ -55,7 +55,8 @@ export function getGeneratedSql(sessionId: number): Promise<string | null> {
  * 流式发送消息，通过 fetch + ReadableStream 实现 SSE
  * @param sessionId 会话ID
  * @param userMessage 用户消息
- * @param onChunk 每收到一段文本时回调
+ * @param onChunk 每收到一段正式输出文本时回调
+ * @param onReasoning 每收到一段思考内容时回调
  * @param onDone 完成时回调
  * @param onError 出错时回调
  */
@@ -63,6 +64,7 @@ export function sendMessageStream(
   sessionId: number,
   userMessage: string,
   onChunk: (text: string) => void,
+  onReasoning: (text: string) => void,
   onDone: () => void,
   onError: (err: string) => void,
 ): AbortController {
@@ -123,12 +125,17 @@ export function sendMessageStream(
               return;
             }
 
-            // message 事件：推送 token
+            if (currentEvent === 'reasoning') {
+              if (data) {
+                onReasoning(data);
+              }
+              continue;
+            }
+
+            // message 事件：推送正式输出 token
             if (data) {
               onChunk(data);
             }
-            // 处理完一个 data 后重置事件类型
-            currentEvent = 'message';
           }
         }
       }

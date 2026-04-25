@@ -96,9 +96,19 @@ public class ChatController {
                 // 流式调用，每个 token 立即推送给前端
                 chatService.processMessageStream(sessionId, userMessage, token -> {
                     try {
-                        emitter.send(SseEmitter.event()
-                                .name("message")
-                                .data(token));
+                        if (token.startsWith("r:")) {
+                            emitter.send(SseEmitter.event()
+                                    .name("reasoning")
+                                    .data(token.substring(2)));
+                        } else if (token.startsWith("c:")) {
+                            emitter.send(SseEmitter.event()
+                                    .name("message")
+                                    .data(token.substring(2)));
+                        } else {
+                            emitter.send(SseEmitter.event()
+                                    .name("message")
+                                    .data(token));
+                        }
                     } catch (IOException e) {
                         log.warn("SSE 推送 token 失败，客户端可能已断开");
                     }
